@@ -1,6 +1,8 @@
 import express from "express";
 import cors from "cors";
 import healthRouter from "./routes/healthcheck.routes.js";
+import userRouter from "./routes/user.routes.js";
+
 
 const app = express();
 
@@ -34,6 +36,10 @@ app.get("/", (req, res) => {
   res.send("Started PM Engine Project!!!");
 });
 
+
 app.use("/api/v1", healthRouter);
+app.use("/api/v1/auth", userRouter)
+
+
 
 export default app;
