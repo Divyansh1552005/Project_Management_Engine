@@ -2,7 +2,7 @@ import express from "express";
 import cors from "cors";
 import healthRouter from "./routes/healthcheck.routes.js";
 import userRouter from "./routes/user.routes.js";
-
+import cookieParser from "cookie-parser";
 
 const app = express();
 
@@ -31,10 +31,15 @@ app.use(
   }),
 );
 
+// COOKIE PARSER
+app.use(cookieParser());
+
+
 // import the routes
 app.get("/", (req, res) => {
   res.send("Started PM Engine Project!!!");
 });
+
 
 
 app.use("/api/v1", healthRouter);
