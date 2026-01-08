@@ -32,14 +32,14 @@ userRouter.route("/verify-email/:verificationToken").get(verifyEmail);
 userRouter.route("/refresh-token").post(refreshAccessToken);
 userRouter
   .route("/forgot-password")
-  .get(userForgotPasswordValidator(), validate, forgotPasswordRequest);
+  .post(userForgotPasswordValidator(), validate, forgotPasswordRequest);
 userRouter
-  .route("reset-password/:resetToken")
+  .route("/reset-password/:resetToken")
   .post(userResetForgotPasswordValidator(), validate, resetForgotPassword);
 
 // secure routes
 userRouter.route("/logout").post(verifyJWT, logoutUser);
-userRouter.route("/current-user").post(verifyJWT, getCurrentUser);
+userRouter.route("/current-user").get(verifyJWT, getCurrentUser);
 userRouter
   .route("/change-password")
   .post(

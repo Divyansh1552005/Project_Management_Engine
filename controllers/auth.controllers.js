@@ -2,9 +2,13 @@ import { userModel } from "../models/user.models.js";
 import { ApiResponse } from "../utils/api-response.js";
 import { ApiError } from "../utils/api-error.js";
 import { asyncHandler } from "../utils/async-handler.js";
-import { emailVerificationMailgenContent, sendEmail } from "../utils/mail.js";
+import {
+  emailVerificationMailgenContent,
+  forgotPasswordMailgenContent,
+  sendEmail,
+} from "../utils/mail.js";
 import jwt from "jsonwebtoken";
-
+import crypto from "crypto";
 
 const generateAccessAndRefreshTokens = async (userId) => {
   try {
@@ -222,12 +226,11 @@ const resendEmailVerification = asyncHandler(async (req, res) => {
     throw new ApiError(404, "User does not exists!");
   }
 
-  if (!user.isEmailVerified) {
+  if (user.isEmailVerified) {
     throw new ApiError(409, "Email is already verified!");
   }
 
-  const { unHashedToken, hashedToken, tokenExpiry } =
-    user.generateTemporaryToken();
+  const { rawToken, hashedToken, tokenExpiry } = user.generateTemporaryToken();
 
   user.emailVerificationToken = hashedToken;
   user.emailVerificationExpiry = tokenExpiry;
@@ -239,7 +242,7 @@ const resendEmailVerification = asyncHandler(async (req, res) => {
     subject: "Please verify your email",
     mailgenContent: emailVerificationMailgenContent(
       user.username,
-      `${req.protocol}://${req.get("host")}/api/v1/users/verify-email/${unHashedToken}`,
+      `${req.protocol}://${req.get("host")}/api/v1/users/verify-email/${rawToken}`,
     ),
   });
 
@@ -266,7 +269,7 @@ const refreshAccessToken = asyncHandler(async (req, res) => {
     if (!user) {
       throw new ApiError(401, "Invalid refresh token");
     }
-    
+
     // we cannot refresh token if it aint db ie user ne logout kr rkha ho
     if (incomingRefreshToken !== user?.refreshToken) {
       throw new ApiError(401, "Refresh token in expired");
@@ -308,8 +311,7 @@ const forgotPasswordRequest = asyncHandler(async (req, res) => {
     throw new ApiError(404, "User does not exists", []);
   }
 
-  const { unHashedToken, hashedToken, tokenExpiry } =
-    user.generateTemporaryToken();
+  const { rawToken, hashedToken, tokenExpiry } = user.generateTemporaryToken();
 
   user.forgotPasswordToken = hashedToken;
   user.forgotPasswordExpiry = tokenExpiry;
@@ -321,7 +323,7 @@ const forgotPasswordRequest = asyncHandler(async (req, res) => {
     subject: "Password reset request",
     mailgenContent: forgotPasswordMailgenContent(
       user.username,
-      `${process.env.FORGOT_PASSWORD_REDIRECT_URL}/${unHashedToken}`,
+      `${process.env.FORGOT_PASSWORD_REDIRECT_URL}/${rawToken}`,
     ),
   });
 
@@ -335,7 +337,6 @@ const forgotPasswordRequest = asyncHandler(async (req, res) => {
       ),
     );
 });
-
 
 const resetForgotPassword = asyncHandler(async (req, res) => {
   const { resetToken } = req.params;
@@ -366,7 +367,6 @@ const resetForgotPassword = asyncHandler(async (req, res) => {
     .json(new ApiResponse(200, {}, "Password reset successfully"));
 });
 
-
 const changeCurrentPassword = asyncHandler(async (req, res) => {
   const { oldPassword, newPassword } = req.body;
 
@@ -396,5 +396,5 @@ export {
   refreshAccessToken,
   forgotPasswordRequest,
   resetForgotPassword,
-  changeCurrentPassword
+  changeCurrentPassword,
 };
